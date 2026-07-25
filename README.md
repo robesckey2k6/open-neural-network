@@ -1,5 +1,6 @@
 # open-neural-network
 A basic neural network library with computation offloaded to gpu using opengl graphics library. ( Without compute shaders)
+(WORK IN PROGRESS!)
 
 # Features implemented
 1. Hardcoded forward pass method
