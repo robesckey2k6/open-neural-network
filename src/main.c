@@ -3,7 +3,7 @@
 int main(void) {
 	gl_instance* instance = gl_init();
 	gl_shader_file* shaders = gl_read_shaders("./src/shaders/index.vs", "./src/shaders/index.fs");
-	gl_compile_shaders(instance, shaders);
+	gl_compile_shaders(instance, shaders, "output_layer");
 
 	float input_layer[2] = {0.85f, 0.25f};
 	float weight_layer1[6] = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f};
@@ -11,19 +11,13 @@ int main(void) {
 	float model_package[2] = {
 		0.85f, 0.25f,                          // input_layer
 	};
+
+	layer1 = onn_linear(2,3, weights1);
+	layer2 = onn_linear(3,2, weights2);
 	
-
-	glGenVertexArrays(1, &instance->vao);
-	glGenBuffers(1, &instance->vbo);
-	
-
-	glBindVertexArray(instance->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, instance->vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(model_package), model_package, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(model_package), (void*) 0);
-
-	glEnableVertexAttribArray(0);
+	x = layer1(x, weights1);
+	x = sigmoid(x);
+	y = layer2(x, weights2);
 
 	// Chuck this into opengl instance struct
 	unsigned int tbo;

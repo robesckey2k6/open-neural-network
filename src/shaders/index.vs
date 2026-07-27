@@ -1,5 +1,5 @@
 #version 330 core
-layout(location = 0) in vec2 input_layer;
+uniform vec2 input_layer;
 uniform mat3x2 weight_layer1;
 uniform mat3x2 weight_layer2;
 

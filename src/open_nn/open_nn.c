@@ -32,9 +32,29 @@ gl_instance* gl_init() {
 		glfwTerminate();
 		return NULL;
 	}
+	
+	unsigned int vao;
+	unsigned int vbo;
 
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+	float vertexs[1] = {1.0f};
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float), vertexs, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*) 0);
+
+	glEnableVertexAttribArray(0);
+
+	
 	gl_instance* instance = (gl_instance*)malloc(sizeof(gl_instance));
 	instance->window = window;
+	instance->vao = vao;
+	instance->vbo = vbo;
 
 	return instance;
 }
@@ -112,7 +132,7 @@ static unsigned int compile_shader(GLenum type, const char *src) {
 	return shader;
 }
 
-int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file) {
+int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file, const char* output_varying_name) {
 	unsigned int vertex_shader = compile_shader(GL_VERTEX_SHADER, shader_file->vertex_shader);	
 
 	unsigned int fragment_shader = compile_shader(GL_FRAGMENT_SHADER, shader_file->fragment_shader);
@@ -126,7 +146,7 @@ int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file) {
 	glAttachShader(program, fragment_shader);
 	
 	// TODO: make this a paramter
-	const char* feedbackVaryings = {"output_layer"};
+	const char* feedbackVaryings = {output_varying_name};
 	glTransformFeedbackVaryings(program, 1, &feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
 
 	glLinkProgram(program);
@@ -147,4 +167,37 @@ int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file) {
 	instance->program = program;
 	return 1;
 	
+}
+
+float* gl_compute(gl_instance* instance, nn_layer* layer, float* data) {
+	unsigned int tbo;
+	glGenBuffers(1, &tbo);
+	glBindBuffer(GL_ARRAY_BUFFER, tbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(layer->output), nullptr, GL_STATIC_DRAW);
+	glEnable(GL_RASTERIZER_DISCARD);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
+	
+	glUseProgram(instance->program);
+	
+	float input_location = glGetUniformLocation(instance->program, "input_layer");
+	float weight_location = glGetUniformLocation(instance->program, "weight_layer");
+	
+	//TODO: figure out a way to figure out matrix in and out dimentions
+	
+	
+	
+	
+	glBeingTransformFeedback(GL_POINTS);
+	glDrawArrays(GL_POINTS, 0, 1);
+
+	float* result = (float*)malloc(sizeof(float * layer->output));
+	glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(feedback), result);
+	
+	glEndTransformFeedback();
+	glFlush();
+
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+	glfwSwapBuffers(instance->window);
 }

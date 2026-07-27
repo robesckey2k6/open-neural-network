@@ -21,12 +21,23 @@ typedef struct {
 	const char* fragment_shader;
 } gl_shader_file;
 
+typedef struct {
+	unsigned int input;
+	unsigned int output;
+} nn_layer;
+
 // * ---------- *
 // Gl functions
 // * ---------- *
 gl_instance* gl_init(); 
 int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file);
 gl_shader_file* gl_read_shaders(const char* vertex_file, const char* fragment_file); 
+
+
+// * ---------- *
+// NN functions
+// * ---------- *
+
 
 // * ------------- *
 // Helper functions
