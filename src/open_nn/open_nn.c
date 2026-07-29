@@ -94,6 +94,7 @@ gl_shader_file* gl_read_shaders(const char* vertex_file, const char* fragment_fi
 
 	const char* vertex_shader = (const char*)malloc(vertex_shader_file_size);
 	const char* fragment_shader = (const char*)malloc(fragment_shader_file_size);
+	
 
 	if ( !(vertex_shader) || !(fragment_shader) ) {
 		printf("Malloc failed @ gl_read_shaders");
@@ -104,6 +105,14 @@ gl_shader_file* gl_read_shaders(const char* vertex_file, const char* fragment_fi
 	fread(fragment_shader, 1, fragment_shader_file_size, ffragment_shader);
 
 	gl_shader_file* shader_files = (gl_shader_file*)malloc(sizeof(gl_shader_file));	
+
+	printf("VERTEX_SHADER:\n");
+	int length = (int)(vertex_shader_file_size/ sizeof(char));
+	for (int i = 0; i < length; i++) {
+		printf("%c", vertex_shader[i]);
+	}
+	printf("\n");
+	printf("FRAGMENT_SHADER:\n");
 
 	shader_files->vertex_shader = vertex_shader;
 	shader_files->fragment_shader = fragment_shader;
@@ -136,6 +145,8 @@ int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file, const
 	unsigned int vertex_shader = compile_shader(GL_VERTEX_SHADER, shader_file->vertex_shader);	
 
 	unsigned int fragment_shader = compile_shader(GL_FRAGMENT_SHADER, shader_file->fragment_shader);
+
+	
 
 	if(!vertex_shader || !fragment_shader) {
 		return 0;
@@ -183,15 +194,16 @@ float* gl_compute(gl_instance* instance, nn_layer* layer, float* data) {
 	float weight_location = glGetUniformLocation(instance->program, "weight_layer");
 	
 	//TODO: figure out a way to figure out matrix in and out dimentions
+	glUniform2fv(input_location, 1, data);
+	glUniformMatrix3x2fv(weight_location, 1, GL_FALSE, layer->weights);
 	
 	
 	
-	
-	glBeingTransformFeedback(GL_POINTS);
+	glBeginTransformFeedback(GL_POINTS);
 	glDrawArrays(GL_POINTS, 0, 1);
 
-	float* result = (float*)malloc(sizeof(float * layer->output));
-	glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(feedback), result);
+	float* result = (float*)malloc(sizeof(float) * layer->output);
+	glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(float) * layer->output, result);
 	
 	glEndTransformFeedback();
 	glFlush();
@@ -200,4 +212,33 @@ float* gl_compute(gl_instance* instance, nn_layer* layer, float* data) {
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 	glfwSwapBuffers(instance->window);
+
+	return result;
 }
+
+
+nn_layer* onn_linear(unsigned int input, unsigned int output, float* weights) {
+
+	nn_layer* layer = (nn_layer*)malloc(sizeof(nn_layer));
+	layer->input = input;
+	layer->output = output;
+	layer->weights = weights;
+
+	return layer;
+}
+
+void gl_clear_error(){
+    while(glGetError() != GL_NO_ERROR){
+    }
+}
+
+void gl_get_error(const char* function, const char* file, int line) {
+    GLenum error = glGetError();
+    while(error){
+	printf("ERROR: ");
+	printf("%x\n", error);
+	printf("%s\n", gluErrorString(error));
+	printf("func: %s file: %s line:%s\n", function, file, line);
+    }
+}
+
