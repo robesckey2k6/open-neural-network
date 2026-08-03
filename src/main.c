@@ -2,7 +2,6 @@
 
 int main(void) {
 
-	printf("RESULTS COMPUTED");
 	gl_instance* instance = gl_init();
 	gl_shader_file* shaders = gl_read_shaders("./src/shaders/index.vs", "./src/shaders/index.fs");
 	gl_compile_shaders(instance, shaders, "output_layer");
@@ -20,6 +19,6 @@ int main(void) {
 	nn_layer* layer2 = onn_linear(3,2, weight_layer2);
 
 	float* result = gl_compute(instance, layer1, input_layer);
-	printf("%f, %f", result[0], result[1]);
+	lprintf("%f, %f", result[0], result[1]);
 		
 }

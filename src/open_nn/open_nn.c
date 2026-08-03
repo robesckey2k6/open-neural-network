@@ -6,6 +6,18 @@
 #define OGL_MAJOR_VERSION 3
 #define OGL_MINOR_VERSION 3
 
+void lprintf(const char* fmt, ...) {
+	va_list args;
+
+	FILE* fptr = fopen("log.txt", "w");
+
+	va_start(args, fmt);
+	int ret = vfprintf(fptr, fmt, args);
+	va_end(args);	
+
+	fclose(fptr);
+}
+
 gl_instance* gl_init() {
 	if(!glfwInit()) {
 		printf("Failed to init glfw\n");
@@ -36,19 +48,19 @@ gl_instance* gl_init() {
 	unsigned int vao;
 	unsigned int vbo;
 
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
+	glc(glGenVertexArrays(1, &vao));
+	glc(glGenBuffers(1, &vbo));
 
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glc(glBindVertexArray(vao));
+	glc(glBindBuffer(GL_ARRAY_BUFFER, vbo));
 
 	float vertexs[1] = {1.0f};
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float), vertexs, GL_STATIC_DRAW);
+	glc(glBufferData(GL_ARRAY_BUFFER, sizeof(float), vertexs, GL_STATIC_DRAW));
 
-	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*) 0);
+	glc(glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*) 0));
 
-	glEnableVertexAttribArray(0);
+	glc(glEnableVertexAttribArray(0));
 
 	
 	gl_instance* instance = (gl_instance*)malloc(sizeof(gl_instance));
@@ -106,35 +118,34 @@ gl_shader_file* gl_read_shaders(const char* vertex_file, const char* fragment_fi
 
 	gl_shader_file* shader_files = (gl_shader_file*)malloc(sizeof(gl_shader_file));	
 
-	printf("VERTEX_SHADER:\n");
 	int length = (int)(vertex_shader_file_size/ sizeof(char));
-	for (int i = 0; i < length; i++) {
-		printf("%c", vertex_shader[i]);
-	}
-	printf("\n");
-	printf("FRAGMENT_SHADER:\n");
 
 	shader_files->vertex_shader = vertex_shader;
 	shader_files->fragment_shader = fragment_shader;
+
+	shader_files->vertex_shader_size = vertex_shader_file_size;
+	shader_files->fragment_shader_size = fragment_shader_file_size;
+
 	return shader_files;
 }
 
 
 
-static unsigned int compile_shader(GLenum type, const char *src) {
-	GLuint shader = glCreateShader(type);
-	glShaderSource(shader, 1, &src, NULL);
-	glCompileShader(shader);
+static unsigned int compile_shader(GLenum type, const char *src, int length) {
+	GLuint shader = glc(glCreateShader(type));
+
+	glc(glShaderSource(shader, 1, &src, &length));
+	glc(glCompileShader(shader));
 
 	GLint ok = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+	glc(glGetShaderiv(shader, GL_COMPILE_STATUS, &ok));
 
 	if (!ok) {
 		char log[1024];
-		glGetShaderInfoLog(shader, sizeof(log), NULL, log);
+		glc(glGetShaderInfoLog(shader, sizeof(log), NULL, log));
 		printf("Shader compile error (%s):\n %s\n",
 				type == GL_VERTEX_SHADER? "vertex": "fragment", log);
-		glDeleteShader(shader);
+		glc(glDeleteShader(shader));
 		return 0;
 	}
 
@@ -142,9 +153,9 @@ static unsigned int compile_shader(GLenum type, const char *src) {
 }
 
 int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file, const char* output_varying_name) {
-	unsigned int vertex_shader = compile_shader(GL_VERTEX_SHADER, shader_file->vertex_shader);	
+	unsigned int vertex_shader = compile_shader(GL_VERTEX_SHADER, shader_file->vertex_shader, (int) shader_file->vertex_shader_size);	
 
-	unsigned int fragment_shader = compile_shader(GL_FRAGMENT_SHADER, shader_file->fragment_shader);
+	unsigned int fragment_shader = compile_shader(GL_FRAGMENT_SHADER, shader_file->fragment_shader, (int) shader_file->fragment_shader_size);
 
 	
 
@@ -152,64 +163,75 @@ int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file, const
 		return 0;
 	}
 	
-	unsigned int program = glCreateProgram();
-	glAttachShader(program, vertex_shader);
-	glAttachShader(program, fragment_shader);
+	unsigned int program = glc(glCreateProgram());
+
+	glc(glAttachShader(program, vertex_shader));
+	glc(glAttachShader(program, fragment_shader));
 	
 	// TODO: make this a paramter
 	const char* feedbackVaryings = {output_varying_name};
-	glTransformFeedbackVaryings(program, 1, &feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
 
-	glLinkProgram(program);
+	glc(glTransformFeedbackVaryings(program, 1, &feedbackVaryings, GL_INTERLEAVED_ATTRIBS));
+
+	glc(glLinkProgram(program));
 	
 	unsigned int linked = 0;
-	glGetProgramiv(program, GL_LINK_STATUS, &linked);
+	glc(glGetProgramiv(program, GL_LINK_STATUS, &linked));
 
 	if(!linked) {
 		char log[1024];
-		glGetProgramInfoLog(program, sizeof(log), NULL, log);
+		glc(glGetProgramInfoLog(program, sizeof(log), NULL, log));
 		printf("Program link error:\n %s\n", log);
 		return 0;
 	}
 
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
+	glc(glDeleteShader(vertex_shader));
+	glc(glDeleteShader(fragment_shader));
 
 	instance->program = program;
+
+	FILE* fptr = fopen("log.txt", "w");
+	fprintf(fptr, "PROGRAM_ID: %d", program);
+	fprintf(fptr, "PROGRAM_ID (INSTANCE): %d", instance->program);
+	fclose(fptr);
+
 	return 1;
 	
 }
 
 float* gl_compute(gl_instance* instance, nn_layer* layer, float* data) {
 	unsigned int tbo;
-	glGenBuffers(1, &tbo);
-	glBindBuffer(GL_ARRAY_BUFFER, tbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(layer->output), nullptr, GL_STATIC_DRAW);
-	glEnable(GL_RASTERIZER_DISCARD);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
+	glc(glGenBuffers(1, &tbo));
+	glc(glBindBuffer(GL_ARRAY_BUFFER, tbo));
+	glc(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * layer->output, nullptr, GL_STATIC_DRAW));
+	glc(glEnable(GL_RASTERIZER_DISCARD));
+	glc(glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo));
 	
-	glUseProgram(instance->program);
+	glc(glUseProgram(instance->program));
 	
-	float input_location = glGetUniformLocation(instance->program, "input_layer");
-	float weight_location = glGetUniformLocation(instance->program, "weight_layer");
+	float input_location = glc(glGetUniformLocation(instance->program, "input_layer"));
+
+	float weight_location = glc(glGetUniformLocation(instance->program, "weight_layer"));
 	
 	//TODO: figure out a way to figure out matrix in and out dimentions
-	glUniform2fv(input_location, 1, data);
-	glUniformMatrix3x2fv(weight_location, 1, GL_FALSE, layer->weights);
+	glc(glUniform2fv(input_location, 1, data));
+	glc(glUniformMatrix3x2fv(weight_location, 1, GL_FALSE, layer->weights));
 	
 	
 	
-	glBeginTransformFeedback(GL_POINTS);
-	glDrawArrays(GL_POINTS, 0, 1);
+	glc(glBeginTransformFeedback(GL_POINTS));
+	glc(glDrawArrays(GL_POINTS, 0, 1));
 
 	float* result = (float*)malloc(sizeof(float) * layer->output);
-	glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(float) * layer->output, result);
 	
-	glEndTransformFeedback();
-	glFlush();
+	printf("RESULT: %d", sizeof(float) * layer->output);
+	glc(glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(float) * layer->output, result));
+	
+	glc(glEndTransformFeedback());
+	glc(glFlush());
 
-	glClear(GL_COLOR_BUFFER_BIT);
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glc(glClear(GL_COLOR_BUFFER_BIT));
+	glc(glClearColor(1.0f, 1.0f, 1.0f, 1.0f));
 
 	glfwSwapBuffers(instance->window);
 
@@ -238,7 +260,7 @@ void gl_get_error(const char* function, const char* file, int line) {
 	printf("ERROR: ");
 	printf("%x\n", error);
 	printf("%s\n", gluErrorString(error));
-	printf("func: %s file: %s line:%s\n", function, file, line);
+	printf("func: %s file: %s line:%d\n", function, file, line);
+	return;
     }
 }
-

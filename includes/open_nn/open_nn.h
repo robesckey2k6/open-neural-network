@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include<glad/gl.h>
+#include<GL/glu.h>
 #include<GLFW/glfw3.h>
 
 typedef struct {
@@ -19,6 +21,10 @@ typedef struct {
 typedef struct {
 	const char* vertex_shader;
 	const char* fragment_shader;
+
+	long vertex_shader_size;
+	long fragment_shader_size;
+
 } gl_shader_file;
 
 typedef struct {
@@ -45,17 +51,17 @@ nn_layer* onn_linear(unsigned int input, unsigned int output, float* weights);
 // Helper functions
 // * ------------- *
 static long get_file_size(FILE* file);
-static unsigned int compile_shader(GLenum type, const char *src);
+static unsigned int compile_shader(GLenum type, const char *src, int length);
 static void gl_get_error(const char* function, const char* file, int line);
 static void gl_clear_error();
+void lprintf(const char* fmt, ...); 
 
 
 #define glc(x)\
-(\
-	gl_clear_error(),\
-	x\
-
-);\
-gl_get_error(#x, __FILE__, __LINE__);\
+	(\
+	 gl_clear_error(),\
+	 x\
+	 );\
+	gl_get_error(#x, __FILE__, __LINE__);
 
 
