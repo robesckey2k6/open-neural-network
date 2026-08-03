@@ -197,11 +197,25 @@ float* gl_compute(gl_instance* instance, nn_layer* layer, float* data) {
 
 	unsigned int compute_payload;
 	glCreateBuffers(1, &compute_payload);
-	glNamedBufferStorage(compute_payload,
-			sizeof(float) * layer->input * layer->output,
-			(const void*) layer->weights,
-			GL_DYNAMIC_STORAGE_BIT
-	);
+
+	unsigned int payload_size_bytes =
+		sizeof(int) * 2 +
+		sizeof(float) * layer->input +
+		sizeof(float) * layer->input * layer->output;
+
+	unsigned char* payload = (unsigned char*)malloc(payload_size_bytes);
+
+	int header[2] = { (int)layer->input, (int)layer->output };
+	memcpy(payload, header, sizeof(header));
+
+	memcpy(payload + sizeof(header), data, sizeof(float) * layer->input);
+
+	memcpy(payload + sizeof(header) + sizeof(float) * layer->input,
+			layer->weights,
+			sizeof(float) * layer->input * layer->output);
+
+	glNamedBufferStorage(compute_payload, payload_size_bytes, payload, GL_DYNAMIC_STORAGE_BIT);
+	free(payload);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, compute_payload);
 
 	//TODO: add this to gl instance

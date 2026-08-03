@@ -5,6 +5,7 @@
 #include<glad/gl.h>
 #include<GL/glu.h>
 #include<GLFW/glfw3.h>
+#include<string.h>
 
 typedef struct {
 	GLFWwindow* window;

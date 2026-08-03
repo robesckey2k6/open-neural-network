@@ -21,4 +21,9 @@ int main(void) {
 	lprintf("HIDDEN LAYER: %f, %f, %f\n", result[0], result[1], result[2]);	
 	printf("HIDDEN LAYER: %f, %f, %f\n", result[0], result[1], result[2]);	
 
+
+	result = gl_compute(instance, layer2, result);
+	lprintf("HIDDEN LAYER: %f, %f, %f\n", result[0], result[1], result[2]);	
+	printf("HIDDEN LAYER: %f, %f, %f\n", result[0], result[1], result[2]);	
+
 }
