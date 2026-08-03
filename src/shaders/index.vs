@@ -1,18 +1,23 @@
-#version 330 core
+#version 430 core
 uniform vec2 input_layer;
-uniform mat3x2 weight_layer1;
+out float output_layer;
 
-out vec3 output_layer;
+layout(binding = 1, std430) readonly buffer ssbo1{
+	float weights[];
+};
 
-vec3 sigmoid(vec3 z) {
-	return 1.0 / (1.0 + exp(-z)); 
-}
-vec2 sigmoid(vec2 z) {
+float sigmoid(float z) {
 	return 1.0 / (1.0 + exp(-z)); 
 }
 
 void main() {
-	vec3 s = input_layer * weight_layer1;
- 	vec3 a = sigmoid(s); 
-	output_layer = a;
+	int instance = gl_InstanceID;
+
+	float sum = 0.0f;
+
+	for(int i = 0; i < 2; i++) {
+		sum += input_layer[i] * weights[instance * 2 + i];
+	}
+
+	output_layer = sigmoid(sum);
 }

@@ -14,11 +14,11 @@ int main(void) {
 		0.85f, 0.25f,                          // input_layer
 	};
 
-
 	nn_layer* layer1 = onn_linear(2,3, weight_layer1);
 	nn_layer* layer2 = onn_linear(3,2, weight_layer2);
 
 	float* result = gl_compute(instance, layer1, input_layer);
-	lprintf("%f, %f", result[0], result[1]);
-		
+	lprintf("HIDDEN LAYER: %f, %f, %f\n", result[0], result[1], result[2]);	
+	printf("HIDDEN LAYER: %f, %f, %f\n", result[0], result[1], result[2]);	
+
 }

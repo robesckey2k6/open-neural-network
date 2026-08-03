@@ -3,13 +3,13 @@
 #define WINDOW_H 640
 #define WINDOW_W 480
 
-#define OGL_MAJOR_VERSION 3
+#define OGL_MAJOR_VERSION 4
 #define OGL_MINOR_VERSION 3
 
 void lprintf(const char* fmt, ...) {
 	va_list args;
 
-	FILE* fptr = fopen("log.txt", "w");
+	FILE* fptr = fopen("log.txt", "a");
 
 	va_start(args, fmt);
 	int ret = vfprintf(fptr, fmt, args);
@@ -189,17 +189,22 @@ int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file, const
 	glc(glDeleteShader(fragment_shader));
 
 	instance->program = program;
-
-	FILE* fptr = fopen("log.txt", "w");
-	fprintf(fptr, "PROGRAM_ID: %d", program);
-	fprintf(fptr, "PROGRAM_ID (INSTANCE): %d", instance->program);
-	fclose(fptr);
-
 	return 1;
 	
 }
 
 float* gl_compute(gl_instance* instance, nn_layer* layer, float* data) {
+
+	unsigned int compute_payload;
+	glCreateBuffers(1, &compute_payload);
+	glNamedBufferStorage(compute_payload,
+			sizeof(float) * layer->input * layer->output,
+			(const void*) layer->weights,
+			GL_DYNAMIC_STORAGE_BIT
+	);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, compute_payload);
+
+	//TODO: add this to gl instance
 	unsigned int tbo;
 	glc(glGenBuffers(1, &tbo));
 	glc(glBindBuffer(GL_ARRAY_BUFFER, tbo));
@@ -207,24 +212,20 @@ float* gl_compute(gl_instance* instance, nn_layer* layer, float* data) {
 	glc(glEnable(GL_RASTERIZER_DISCARD));
 	glc(glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo));
 	
+	//TODO: bind vao and all everything from instance
 	glc(glUseProgram(instance->program));
 	
 	float input_location = glc(glGetUniformLocation(instance->program, "input_layer"));
-
-	float weight_location = glc(glGetUniformLocation(instance->program, "weight_layer"));
 	
-	//TODO: figure out a way to figure out matrix in and out dimentions
+	//TODO: implement ssbo for this
 	glc(glUniform2fv(input_location, 1, data));
-	glc(glUniformMatrix3x2fv(weight_location, 1, GL_FALSE, layer->weights));
-	
 	
 	
 	glc(glBeginTransformFeedback(GL_POINTS));
-	glc(glDrawArrays(GL_POINTS, 0, 1));
+	glc(glDrawArraysInstanced(GL_POINTS, 0, 1, layer->output));
 
 	float* result = (float*)malloc(sizeof(float) * layer->output);
 	
-	printf("RESULT: %d", sizeof(float) * layer->output);
 	glc(glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(float) * layer->output, result));
 	
 	glc(glEndTransformFeedback());
