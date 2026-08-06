@@ -7,7 +7,8 @@ A basic neural network library with computation offloaded to gpu using opengl gr
 2. Sigmoid function as a activation function
 3. Using transform feedback to fetch data back from gpu to the cpu side after computation.
 4. Implemented tensors as matrix operations
-
+5. Adaptive model size and hidden layers
+   
 # Features in progress
 1. Gradient desent & Model training
-2. Adaptive model size and hidden layers
+
