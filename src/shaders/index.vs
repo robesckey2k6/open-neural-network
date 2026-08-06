@@ -21,9 +21,11 @@ void main() {
 
 	for(int i = 0; i < input_size; i++) {
 		float in_val = data[i];
-		float w = data[(input_size - 1) + instance * input_size + i];
+		float w = data[(input_size) + instance * input_size + i];
 		sum += in_val * w;
 	}
 
 	output_layer = sigmoid(sum); 
 }
+
+

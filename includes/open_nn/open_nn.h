@@ -42,6 +42,7 @@ gl_instance* gl_init();
 int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file, const char* output_varying_name);
 gl_shader_file* gl_read_shaders(const char* vertex_file, const char* fragment_file); 
 float* gl_compute(gl_instance* instance, nn_layer* layer, float* data);
+float gl_mse(gl_instance* instance, float* result, float* actual, unsigned int count);
 
 // * ---------- *
 // NN functions
