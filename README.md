@@ -124,7 +124,3 @@ float           gl_mse(gl_instance* instance, float* result, float* actual, unsi
 ```
 
 Every GL call in the library is wrapped in a `glc(...)` macro that clears the GL error queue beforehand and checks/logs it afterward, making shader and buffer errors easier to trace during development.
-
-## License
-
-No license specified — add one if you intend to share or open-source this project.
