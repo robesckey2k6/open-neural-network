@@ -10,12 +10,14 @@
 typedef struct {
 	GLFWwindow* window;
 	const char* version;
-	const char* vertex_shader;
-	const char* fragment_shader;
-	unsigned int program;
-
+	
+	// Shaders here:
+	unsigned int shdr_fps; // Forawrdpass
+	unsigned int shdr_mse; // Mean Square Error
+	unsigned int shdr_gde; // Gradient Decent
+	
+	// Essential buffers for compuation
 	unsigned int vao;
-	unsigned int vbo;
 	unsigned int tbo;
 } gl_instance;
 
@@ -38,11 +40,24 @@ typedef struct {
 // * ---------- *
 // Gl functions
 // * ---------- *
+//
+int gl_compile_vertex_shader(gl_shader_file* shader_file, const char* output_varying_name);
+gl_shader_file* gl_read_vshdr(const char* vertex_file);
 gl_instance* gl_init(); 
 int gl_compile_shaders(gl_instance* instance, gl_shader_file* shader_file, const char* output_varying_name);
 gl_shader_file* gl_read_shaders(const char* vertex_file, const char* fragment_file); 
 float* gl_compute(gl_instance* instance, nn_layer* layer, float* data);
-float gl_mse(gl_instance* instance, float* result, float* actual, unsigned int count);
+float gl_mse(gl_instance* instance, float* result, float* actual, int count);
+float* gl_gd(
+	gl_instance* instance,
+	nn_layer*    prev_layer,           // layer2 (3 -> 2)
+	float*       prev_layer_input,     // hidden activations (n_hidden floats)
+	float*       prev_output,          // output activations (n_out floats)
+	float*       expected,             // targets (n_out floats)
+	float        learning_rate,
+	float*       prev_layer_weights,   // n_hidden * n_out floats
+	int*         out_weight_count);
+
 
 // * ---------- *
 // NN functions

@@ -3,9 +3,6 @@
 int main(void) {
 
 	gl_instance* instance = gl_init();
-	gl_shader_file* shaders = gl_read_shaders("./src/shaders/index.vs", "./src/shaders/index.fs");
-	gl_compile_shaders(instance, shaders, "output_layer");
-
 
 	float input_layer[2] = {0.85f, 0.25f};
 
@@ -30,5 +27,22 @@ int main(void) {
 
 	float mse_result = gl_mse(instance, result2, actual_output, layer2->output);
 	printf("LOSS1: %f\n", mse_result);
+	
+	int weight_count = 6;
+
+	float* gd = gl_gd(instance,
+			layer2,
+			result,          // hidden activations (3 floats)
+			result2,         // output activations (2 floats)
+			actual_output,   // targets (2 floats)
+			0.1f,            // learning rate
+			weight_layer2,   // hidden -> output weights (6 floats)
+			&weight_count);
+
+	printf("NEW WEIGHTS FOR OUTPUT LAYER\n");
+	for (int i = 0; i < weight_count; i++) {
+		printf("%f\n", gd[i]);
+	}
+	free(gd);
 
 }

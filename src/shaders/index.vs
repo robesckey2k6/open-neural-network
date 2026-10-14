@@ -1,14 +1,14 @@
 #version 430 core
 
-layout(binding = 1, std430) readonly buffer ssbo1{
-	int input_size;
-	int output_size;
-	
-	float data[];
+layout(binding = 1, std430) readonly buffer ssbo1 {
+	float indat[];
 };
 
-out float output_layer;
+layout(binding = 2, std430) readonly buffer ssbo2 {
+	float weights[];
+};
 
+out float outdat;
 
 float sigmoid(float z) {
 	return 1.0 / (1.0 + exp(-z)); 
@@ -18,14 +18,19 @@ void main() {
 	int instance = gl_InstanceID;
 
 	float sum = 0.0f;
+	int indat_size = indat.length();
 
-	for(int i = 0; i < input_size; i++) {
-		float in_val = data[i];
-		float w = data[(input_size) + instance * input_size + i];
-		sum += in_val * w;
+	for(int i = 0; i < indat_size; i++) {
+		float inval = indat[i];
+
+		int weight_group = instance * indat_size;
+		
+		float weight = weights[weight_group + i];
+
+		sum += inval * weight;
 	}
 
-	output_layer = sigmoid(sum); 
+	outdat = sigmoid(sum); 
 }
 
 

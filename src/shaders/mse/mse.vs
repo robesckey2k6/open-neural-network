@@ -1,18 +1,12 @@
 #version 430 core
 
-layout(binding = 2, std430) readonly buffer ssbo1 {
-	int result_size;
-	float data[];
-};
+layout(std430, binding = 1) readonly buffer ResultBuf { float result[]; };
+layout(std430, binding = 2) readonly buffer ActualBuf { float actual[]; };
 
-out float output_layer;
+out float outdat;
 
 void main() {
-	int instance = gl_InstanceID;
-
-	float mse = data[result_size + instance] - data[instance];
-	mse = mse * mse;
-
-	output_layer = mse;
-
+	int i = gl_InstanceID;
+	float d = result[i] - actual[i];
+	outdat = d * d;
 }
